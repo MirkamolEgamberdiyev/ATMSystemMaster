@@ -19,6 +19,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import pdp.uz.security.JWTFilter;
 import pdp.uz.service.UserService;
 
+import javax.mail.*;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import java.util.Properties;
 
 
@@ -38,9 +41,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             "/v2/api-docs",
             "/webjars/**"
     };
-
-
-
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
@@ -83,19 +83,44 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         web.ignoring().antMatchers("/api/auth");
     }
 
-    @Bean
-    public JavaMailSender getJavaMailSender() {
-        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-        mailSender.setHost("smtp.gmail.com");
-        mailSender.setPort(587);
-        mailSender.setUsername("mira@7907");
-        mailSender.setPassword("clever7907");
 
-        Properties properties = mailSender.getJavaMailProperties();
-        properties.put("mail.transport.protocol", "smtp");
-        properties.put("mail.smtp.auth", "true");
-        properties.put("mail.smtp.starttls.enable", "true");
-        properties.put("mail.debug", "true");
-        return mailSender;
+    public Boolean sendMessage(String recipient, String link) {
+        try {
+            Properties properties = new Properties();
+            properties.put("mail.transport.protocol", "smtp");
+            properties.put("mail.smtp.auth", "true");
+            properties.put("mail.smtp.starttls.enable", "true");
+            properties.put("mail.debug", "true");
+//        return mailSender;
+
+            Properties newProperties = new Properties();
+            newProperties.put("mail.smtp.host", "sandbox.smtp.mailtrap.io");
+            newProperties.put("mail.smtp.port", "587");
+            newProperties.put("mail.smtp.starttls.enable", "true");
+            newProperties.put("mail.smtp.auth", "true");
+            String username = "a158d78b65a1df";
+            String password = "471c9eefc37f12";
+            Session session = getSession(newProperties, username, password);
+            Message message = new MimeMessage(session);
+            message.setSubject("Test uchun subjecct");
+            String mess = String.format("<h1><a href='/%s'>Tasdiqlang</a></h1>", link);
+            message.setContent(mess, "text/html");
+            message.setFrom(new InternetAddress(username));
+//            String recipient = "farruxmashrapov92@gmail.com";
+            message.setRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
+            Transport.send(message);
+            return true;
+        } catch (MessagingException e) {
+            return false;
+        }
     }
+    private Session getSession(Properties newProperties, String username, String password) {
+        return Session.getInstance(newProperties, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(username, password);
+            }
+        });
+    }
+
 }
